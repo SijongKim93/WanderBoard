@@ -135,6 +135,27 @@ class TextInputCollectionViewCell: UICollectionViewCell {
 }
 
 extension TextInputCollectionViewCell: UITextViewDelegate, UITextFieldDelegate {
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text.isEmpty {
+            return true
+        }
+        
+        let currentText = textView.text as NSString
+        let newText = currentText.replacingCharacters(in: range, with: text)
+        
+        let fittingSize = CGSize(width: textView.frame.width, height: CGFloat.greatestFiniteMagnitude)
+        let size = textView.sizeThatFits(fittingSize)
+        
+        if newText.count <= 220 && size.height <= textView.frame.height {
+            setTextViewBorderColor(UIColor.darkgray)
+            return true
+        } else {
+            provideHapticFeedback()
+            setTextViewBorderColor(UIColor.red, alpha: 0.1)
+            return false
+        }
+    }
+    
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.text.isEmpty {
             placeholderLabel.isHidden = true
@@ -150,14 +171,6 @@ extension TextInputCollectionViewCell: UITextViewDelegate, UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == titleTextField {
             contentTextView.becomeFirstResponder()
-        }
-        return true
-    }
-    
-    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        if text == "\n" {
-            textView.insertText("\n")
-            return false
         }
         return true
     }

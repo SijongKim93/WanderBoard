@@ -22,10 +22,7 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
         $0.layer.cornerRadius = 25
     }
     
-    private let blackView = UIImageView().then {
-        $0.backgroundColor = .black.withAlphaComponent(0.4)
-        $0.layer.cornerRadius = 25
-    }
+    private let gradientLayer = CAGradientLayer()
     
     let titleLabel = UILabel().then{
         let screenWidth = UIScreen.main.bounds.width
@@ -71,6 +68,7 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
         super.init(frame: frame)
         
         setupConstraints()
+        setupGradientLayer()
     }
     
     required init?(coder: NSCoder) {
@@ -79,20 +77,15 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
     
     func setupConstraints() {
         contentView.addSubview(bgImage)
-        bgImage.addSubview(blackView)
         
-        blackView.addSubview(stackView)
-        blackView.addSubview(privateButton)
-        blackView.addSubview(profileImg)
+        bgImage.addSubview(stackView)
+        bgImage.addSubview(privateButton)
+        bgImage.addSubview(profileImg)
         
         stackView.addArrangedSubview(titleLabel)
         stackView.addArrangedSubview(subTitle)
         
         bgImage.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-        }
-        
-        blackView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
     
@@ -115,6 +108,14 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
         }
     }
     
+    private func setupGradientLayer() {
+        gradientLayer.colors = [UIColor.black.withAlphaComponent(0.7).cgColor, UIColor.clear.cgColor]
+        gradientLayer.startPoint = CGPoint(x: 1.0, y: 1.0)
+        gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.2)
+        bgImage.layer.insertSublayer(gradientLayer, at: 0)
+        
+    }
+    
     func updateProfileImageVisibility(for filterIndex: Int) {
         self.profileImg.isHidden = filterIndex == 0
     }
@@ -122,6 +123,7 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
     func configure(with tripLog: PinLog) async {
         if let imageUrl = tripLog.media.first(where: { $0.isRepresentative })?.url ?? tripLog.media.first?.url, let url = URL(string: imageUrl) {
             bgImage.kf.setImage(with: url)
+            gradientLayer.frame = bgImage.frame
         } else {
             bgImage.image = UIImage(systemName: "photo")
         }
@@ -137,7 +139,6 @@ class MyTripsCollectionViewCell: UICollectionViewCell {
         } else {
             subTitle.text = "\(startDate) - \(endDate) • \(duration + 1) days"
         }
-        
         privateButton.isHidden = tripLog.isPublic
         
         // 프로필 사진

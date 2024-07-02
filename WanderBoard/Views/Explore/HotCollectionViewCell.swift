@@ -24,11 +24,6 @@ class HotCollectionViewCell: UICollectionViewCell {
         $0.tintColor = .black
     }
     
-    private let blackView = UIImageView().then {
-        $0.backgroundColor = UIColor.clear
-        $0.layer.cornerRadius = 30
-    }
-    
     private let gradientLayer = CAGradientLayer()
     
     private let dateLabel = UILabel().then {
@@ -66,17 +61,12 @@ class HotCollectionViewCell: UICollectionViewCell {
     
     private func setupConstraints() {
         contentView.addSubview(backImg)
-        backImg.addSubview(blackView)
         
         [dateLabel, locationLabel, profile].forEach{
-            blackView.addSubview($0)
+            backImg.addSubview($0)
         }
         
         backImg.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-        }
-        
-        blackView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
 
@@ -120,7 +110,7 @@ class HotCollectionViewCell: UICollectionViewCell {
         } else {
             backImg.backgroundColor = .black
         }
-        gradientLayer.frame = backImg.bounds
+        gradientLayer.frame = backImg.frame.offsetBy(dx: 0, dy: 2)
         
         // 프로필 사진
         if let photoURL = try? await FirestoreManager.shared.fetchUserProfileImageURL(userId: hotLog.authorId), let url = URL(string: photoURL) {

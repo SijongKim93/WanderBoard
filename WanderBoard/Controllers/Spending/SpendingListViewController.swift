@@ -38,6 +38,7 @@ class SpendingListViewController: UIViewController {
     }()
     
     let categoryImageMapping: [String: String] = CategoryData.categoryImageMapping
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -286,7 +287,7 @@ extension SpendingListViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 70
+        return 80
     }
 
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {

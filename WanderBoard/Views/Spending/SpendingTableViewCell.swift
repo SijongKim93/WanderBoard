@@ -27,7 +27,7 @@ class SpendingTableViewCell: UITableViewCell {
     let memo: UILabel = {
         let memo = UILabel()
         memo.font = UIFont.systemFont(ofSize: 12)
-        memo.numberOfLines = 1
+        memo.numberOfLines = 2
         return memo
     }()
     

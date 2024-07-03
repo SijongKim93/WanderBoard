@@ -1,4 +1,4 @@
-# WanderBoard
+
 ```
 📸 여행을 기록하고 공유하는, 여행 매니아를 위한 필수 앱
 🏞 WanderBoard에서 나만의 여행기록을 작성하고, 다른 사람들과 공유해보세요.
@@ -63,9 +63,7 @@
 
 ## 🎯 Main Feature
 ### 1) Login & Sign In
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/876e058d-aeb1-4ce4-b018-b07c7352879d">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/8026bea7-a199-48b4-94f6-ee22d9c805f8">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/80a34a79-30c5-42f9-a410-817c1d9062d0"><br><br>
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/cd5fa882-e264-4a6c-b667-8fde0aac0216">
 
 - 애플, 구글, 카카오 소셜 로그인 기능 구현 완료
 - 로그인 이후 WanderBoard 내 사용할 회원 정보 가입
@@ -73,10 +71,8 @@
 </br>
 
 ### 2) Home
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/08e969d6-8922-4a05-afcc-9bfff67f68d1">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/779fa237-1cab-4710-92d0-088f50e791e9">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/a3293fb8-2aea-4bdf-a486-4d2c50c9aa0f
-"><br><br>
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/364cb921-fa69-43f7-992f-ed56404f96c5">
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/ca04fa5d-0c34-47a0-831a-5a2648973871">
 
 - 버튼을 활용해 메인 페이지 이동 구현
 - 유저가 올린 핀 로그와 내가 올린 핀 로그 실시간 확인, 소셜 기능 구현
@@ -86,10 +82,10 @@
 </br>
 
 ### 3) Detail
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/5adccd1f-04c0-48d7-ba02-7ce5ef62a7d4">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/f1d9c812-7d12-4392-b720-f7259d605dec">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/b0447e7e-e948-47a7-b8ad-9f97082175ef">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/166ed9bd-f1a2-4d65-8e76-5d475e2bc7d2"><br><br>
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/2b5fac70-203f-41df-afcd-c37f76b4a085">
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/f7b89ef6-a143-4305-ba74-7be56ea56bbc">
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/03e71bff-7c66-40c1-b459-49f47e65bbca">
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/85fd6d9b-7d19-4d1d-bd21-d34f6ee4a862">
 
 - firebase를 통해 데이터를 저장 후 불러오기 기능 구현
 - 유저 혹은 내가 올린 여행의 사진, 장소, 지출 내역 등 확인
@@ -100,10 +96,7 @@
 </br>
 
 ### 4) MyPage
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/8079be70-a3e1-4b75-b80c-ecd841e9eb03">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/41edd675-dd99-40f2-b961-b66d8aac75ef">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/15e43c39-b871-4705-b20c-f3d823819a0a">
-<img width="200" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/fbb3edee-5e1a-4ab7-b535-9126adce0e20"><br><br>
+<img width="800" src ="https://github.com/WanderBoard/WanderBoard/assets/158182449/d148f0dd-d77e-4d87-9bb0-6aaf0920f4f3">
 
 - 내가 올린 핀 로그, 태그 된 핀 로그, 저장한 핀 로그 갯수 확인
 - 다크모드 기능 구현

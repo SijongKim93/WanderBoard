@@ -36,6 +36,20 @@
 ## 🛠️ Stacks
 **Environment**
 
+| 범위 | 기술 이름 |
+| --- | --- |
+| **의존성 관리 도구** | SPM |
+| **형상 관리 도구** | GitHub, Git |
+| **아키텍처** | MVC |
+| **디자인 패턴** | Singleton, Delegate |
+| **인터페이스** | UIKit, SwiftUI |
+| **레이아웃 구성** | SnapKit 5.7.1, Then 3.0.0 |
+| **내부 저장소** | firebase 10.26.0, CoreData, UserDefaults |
+| **외부 인증** | GoogleSignIn 7.1.0, KakaoOpenSDK 2.22.2 |
+| **이미지 처리** | Kingfisher 7.12.0 |
+| **코드 스타일** | swiftStyleGuide, SwiftAPI  |
+| **네트워킹** | Concurrent, Alamofire  |
+
 <img src="https://img.shields.io/badge/-Xcode-147EFB?style=flat&logo=xcode&logoColor=white"/> <img src="https://img.shields.io/badge/-git-F05032?style=flat&logo=git&logoColor=white"/> <img src="https://img.shields.io/badge/-github-181717?style=flat&logo=github&logoColor=white"/> <img src="https://img.shields.io/badge/-firebase-DD2C00?style=flat&logo=firebase&logoColor=white"/>
 
 **Language**
@@ -122,12 +136,21 @@
     - SwiftUI를 활용한 애니메이션 효과 등
     
 *  **김한빛** ([gksqlc7386](https://github.com/gksqlc7386))
-    
+    - MainPageView, MyBoard, Search Page 구현
+    - 핀 상태 별 정렬 및 회원 탈퇴 구현
+    - 화면 이동, 데이터 전달 구현
+    - 앱 디자인
  
 *  **이시안** ([DDattj](https://github.com/DDattj))
-    
+   - MyPage, 환경설정 구현
+   - 유저 프로필 구현
+   - 다크모드 최적화
+   - 앱 디자인
 
 *  **금세미** ([pond1225](https://github.com/pond1225))
+   - 지출 페이지 구현
+   - 기본 프로필 상태 업데이트
+   - QA 담당
     
 
 <br>

@@ -735,23 +735,51 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
     }
     
     @objc func doneButtonTapped() {
+        guard validateInputs() else { return }
+        
+        navigationItem.rightBarButtonItem?.isEnabled = false
+
+        showProgressView()
+
+        Task {
+            do {
+                var pinLog = try await createOrUpdatePinLog()
+                let savedPinLog = try await savePinLog(pinLog: &pinLog)
+                self.savedPinLogId = savedPinLog.id
+                self.pinLog = savedPinLog
+                self.pinLog?.expenses = self.expenses
+                delegate?.didSavePinLog(savedPinLog)
+                hideProgressView()
+                navigationItem.rightBarButtonItem?.isEnabled = true
+                dismiss(animated: true, completion: nil)
+            } catch {
+                hideProgressView()
+                showAlert(title: "오류", message: "데이터 저장에 실패했습니다.")
+                navigationItem.rightBarButtonItem?.isEnabled = true
+            }
+        }
+    }
+    
+    private func validateInputs() -> Bool {
         guard let locationTitle = locationLeftLabel.text, !locationTitle.isEmpty, locationTitle != "지역을 선택하세요" else {
             showAlert(title: "지역 선택", message: "지역을 선택해주세요.")
-            return
+            return false
         }
 
         guard let dateRange = dateLabel.text, dateRange != "날짜를 선택하세요" else {
             showAlert(title: "날짜 선택", message: "유효한 날짜를 선택해주세요.")
-            return
+            return false
         }
 
         guard !selectedImages.isEmpty else {
             showAlert(title: "앨범 추가", message: "최소한 하나의 이미지를 선택해주세요.")
-            return
+            return false
         }
 
-        navigationItem.rightBarButtonItem?.isEnabled = false
-
+        return true
+    }
+    
+    private func parseDateRange(_ dateRange: String) -> (Date, Date)? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
 
@@ -760,16 +788,19 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
               let startDate = dateFormatter.date(from: String(dates[0])),
               let endDate = dateFormatter.date(from: String(dates[1])) else {
             showAlert(title: "오류", message: "유효한 날짜를 선택해주세요.")
-            return
+            return nil
+        }
+        return (startDate, endDate)
+    }
+    
+    private func createOrUpdatePinLog() async throws -> PinLog {
+        guard let dateRange = dateLabel.text, let (startDate, endDate) = parseDateRange(dateRange) else {
+            throw NSError(domain: "DateError", code: -1, userInfo: [NSLocalizedDescriptionKey: "유효한 날짜를 선택해주세요."])
         }
 
-        var title: String?
-        var content: String?
-        if let textInputCell = detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
-            title = textInputCell.titleTextField.text
-            content = textInputCell.contentTextView.text
-        }
-
+        var pinLog: PinLog
+        let title = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.titleTextField.text
+        let content = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.contentTextView.text
         let isPublic = publicSwitch.isOn
         let isSpendingPublic = spendingPublicSwitch.isOn
         let address = savedAddress ?? "Unknown Address"
@@ -778,82 +809,59 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         let totalSpendingAmount = calculateTotalSpendingAmount()
         let maxSpendingAmount = calculateMaxSpendingAmount()
 
-        let imageLocations = selectedImages.compactMap { $0.2 }
-
-        showProgressView()
-
-        Task {
-            do {
-                var pinLog: PinLog
-
-                if let existingPinLog = self.pinLog {
-                    pinLog = existingPinLog
-                    pinLog.location = locationTitle
-                    pinLog.address = address
-                    pinLog.latitude = latitude
-                    pinLog.longitude = longitude
-                    pinLog.startDate = startDate
-                    pinLog.endDate = endDate
-                    pinLog.title = title ?? ""
-                    pinLog.content = content ?? ""
-                    pinLog.isPublic = isPublic
-                    pinLog.isSpendingPublic = isSpendingPublic
-                    pinLog.attendeeIds = selectedFriends.map { $0.uid }
-                    pinLog.totalSpendingAmount = totalSpendingAmount
-                    pinLog.maxSpendingAmount = maxSpendingAmount
-                    pinLog.expenses = self.expenses
-                } else {
-                    pinLog = PinLog(location: locationTitle,
-                                    address: address,
-                                    latitude: latitude,
-                                    longitude: longitude,
-                                    startDate: startDate,
-                                    endDate: endDate,
-                                    title: title ?? "",
-                                    content: content ?? "",
-                                    media: [],
-                                    authorId: Auth.auth().currentUser?.uid ?? "",
-                                    attendeeIds: selectedFriends.map { $0.uid },
-                                    isPublic: isPublic,
-                                    createdAt: Date(),
-                                    pinCount: 0,
-                                    pinnedBy: [],
-                                    totalSpendingAmount: totalSpendingAmount,
-                                    isSpendingPublic: isSpendingPublic,
-                                    maxSpendingAmount: maxSpendingAmount,
-                                    expenses: self.expenses)
-                }
-
-                if let representativeIndex = selectedImages.firstIndex(where: { $0.1 }) {
-                    for i in 0..<selectedImages.count {
-                        selectedImages[i].1 = (i == representativeIndex)
-                    }
-                } else if !selectedImages.isEmpty {
-                    selectedImages[0].1 = true
-                }
-
-                let isRepresentativeFlags = selectedImages.map { $0.1 }
-
-                let savedPinLog = try await pinLogManager.createOrUpdatePinLog(pinLog: &pinLog, images: selectedImages.map { $0.0 }, imageLocations: imageLocations, isRepresentativeFlags: isRepresentativeFlags)
-                self.savedPinLogId = savedPinLog.id
-                self.pinLog = savedPinLog
-                self.pinLog?.expenses = self.expenses // 추가된 부분
-                delegate?.didSavePinLog(savedPinLog)
-
-                hideProgressView()
-                navigationItem.rightBarButtonItem?.isEnabled = true
-
-                dismiss(animated: true, completion: nil)
-            } catch {
-                let alert = UIAlertController(title: "오류", message: "데이터 저장에 실패했습니다.", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "확인", style: .default))
-                present(alert, animated: true, completion: nil)
-            }
-            hideProgressView()
-            showButtonFeedBackView()
-
-            navigationItem.rightBarButtonItem?.isEnabled = true
+        if let existingPinLog = self.pinLog {
+            pinLog = existingPinLog
+            pinLog.location = locationLeftLabel.text!
+            pinLog.address = address
+            pinLog.latitude = latitude
+            pinLog.longitude = longitude
+            pinLog.startDate = startDate
+            pinLog.endDate = endDate
+            pinLog.title = title ?? ""
+            pinLog.content = content ?? ""
+            pinLog.isPublic = isPublic
+            pinLog.isSpendingPublic = isSpendingPublic
+            pinLog.attendeeIds = selectedFriends.map { $0.uid }
+            pinLog.totalSpendingAmount = totalSpendingAmount
+            pinLog.maxSpendingAmount = maxSpendingAmount
+            pinLog.expenses = self.expenses
+        } else {
+            pinLog = PinLog(location: locationLeftLabel.text!,
+                            address: address,
+                            latitude: latitude,
+                            longitude: longitude,
+                            startDate: startDate,
+                            endDate: endDate,
+                            title: title ?? "",
+                            content: content ?? "",
+                            media: [],
+                            authorId: Auth.auth().currentUser?.uid ?? "",
+                            attendeeIds: selectedFriends.map { $0.uid },
+                            isPublic: isPublic,
+                            createdAt: Date(),
+                            pinCount: 0,
+                            pinnedBy: [],
+                            totalSpendingAmount: totalSpendingAmount,
+                            isSpendingPublic: isSpendingPublic,
+                            maxSpendingAmount: maxSpendingAmount,
+                            expenses: self.expenses)
         }
+
+        if let representativeIndex = selectedImages.firstIndex(where: { $0.1 }) {
+            for i in 0..<selectedImages.count {
+                selectedImages[i].1 = (i == representativeIndex)
+            }
+        } else if !selectedImages.isEmpty {
+            selectedImages[0].1 = true
+        }
+
+        return pinLog
+    }
+    
+    private func savePinLog(pinLog: inout PinLog) async throws -> PinLog {
+        let isRepresentativeFlags = selectedImages.map { $0.1 }
+        let imageLocations = selectedImages.compactMap { $0.2 }
+        return try await pinLogManager.createOrUpdatePinLog(pinLog: &pinLog, images: selectedImages.map { $0.0 }, imageLocations: imageLocations, isRepresentativeFlags: isRepresentativeFlags)
     }
     
     private func showButtonFeedBackView() {

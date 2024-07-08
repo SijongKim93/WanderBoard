@@ -458,7 +458,6 @@ class DetailViewController: UIViewController {
             updatedPinCount += 1
             showButtonFeedBackView()
         }
-        
         // Firestore에 업데이트
         guard let pinLogId = pinLog.id else { return }
         let pinLogRef = Firestore.firestore().collection("pinLogs").document(pinLogId)

@@ -734,6 +734,27 @@ class EditViewController: BaseViewController, UITextFieldDelegate, PHPickerViewC
         
         Task {
             do {
+                // 7월 2일 추가: 사용자와 관련된 모든 핀로그 이미지를 삭제
+                let pinLogs = try await PinLogManager.shared.fetchPinLogs(forUserId: userId)
+                for pinLog in pinLogs {
+                    do {
+                        try await PinLogManager.shared.deleteImages(from: pinLog)
+                    } catch {
+                        print("Failed to delete images for pinLog \(pinLog.id ?? "unknown ID"): \(error)")
+                        // Continue with the next pinLog
+                        continue
+                    }
+                }
+                
+                // 7월 2일 추가: 사용자와 관련된 모든 핀로그를 삭제
+                for pinLog in pinLogs {
+                    do {
+                        try await PinLogManager.shared.deletePinLog(pinLogId: pinLog.id!)
+                    } catch {
+                        print("Failed to delete pinLog \(pinLog.id ?? "unknown ID"): \(error)")
+                        continue
+                    }
+                }
                 // 모든 사용자 데이터 삭제
                 try await AccountDeletionManager.shared.deleteUser(uid: userId, context: context)
                 

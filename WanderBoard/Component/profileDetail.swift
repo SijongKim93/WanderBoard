@@ -50,12 +50,16 @@ class profileDetail: UIViewController {
             $0.centerY.equalToSuperview().offset(-70)
             $0.centerX.equalToSuperview()
             $0.width.height.equalTo(211)
-            $0.left.right.equalToSuperview().inset(90)
         }
         nameLabel.snp.makeConstraints(){
             $0.top.equalTo(profileImage.snp.bottom).offset(30)
             $0.centerX.equalToSuperview()
         }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        view.layoutIfNeeded()
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {

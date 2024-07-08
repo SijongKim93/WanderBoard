@@ -291,7 +291,7 @@ class DetailViewController: UIViewController {
         let collectionViewHeightMultiplier: CGFloat = screenHeight < 750 ? 0.58 : 0.52
         
         let detailViewButtonTB: CGFloat = screenHeight < 750 ? 0 : 30
-        let expendableViewH: CGFloat = screenHeight < 750 ? 96 : 110
+        let expendableViewH: CGFloat = screenHeight < 750 ? 86 : 100
         
         detailViewCollectionView.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(6)
@@ -337,7 +337,7 @@ class DetailViewController: UIViewController {
         }
         
         expandableView.snp.makeConstraints {
-            $0.top.equalTo(optionsButton.snp.bottom).offset(12)
+            $0.top.equalTo(optionsButton.snp.bottom).offset(15)
             $0.trailing.equalToSuperview().offset(15)
             $0.width.equalTo(50)
             $0.height.equalTo(expendableViewH)
@@ -457,7 +457,6 @@ class DetailViewController: UIViewController {
             updatedPinnedBy.append(currentUserId)
             updatedPinCount += 1
             showButtonFeedBackView()
-
         }
         // Firestore에 업데이트
         guard let pinLogId = pinLog.id else { return }
@@ -607,7 +606,6 @@ class DetailViewController: UIViewController {
         
         friendCollectionView.isHidden = pinLog.attendeeIds.isEmpty
         
-        // 대표 이미지와 텍스트 추출
         pinLogTitle = pinLog.title
         pinLogContent = pinLog.content
         
@@ -804,6 +802,7 @@ class DetailViewController: UIViewController {
             guard let self = self, let pinLog = self.pinLog else { return }
             Task {
                 do {
+                    try await self.pinLogManager.deleteImages(from: pinLog)
                     try await self.pinLogManager.deletePinLog(pinLogId: pinLog.id!)
                     self.delegate?.didUpdatePinLog()
                     self.pinLog = nil

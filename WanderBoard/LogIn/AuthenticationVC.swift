@@ -398,7 +398,7 @@ class AuthenticationVC: UIViewController {
             .compactMap({ $0 as? UIWindowScene })
             .flatMap({ $0.windows })
             .first(where: { $0.isKeyWindow }) else { return }
-        window.rootViewController = UINavigationController(rootViewController: viewController)
+        window.rootViewController = viewController
         window.makeKeyAndVisible()
     }
     

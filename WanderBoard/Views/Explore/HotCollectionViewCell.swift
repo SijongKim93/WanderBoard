@@ -24,12 +24,7 @@ class HotCollectionViewCell: UICollectionViewCell {
         $0.tintColor = .black
     }
     
-    private let blackView = UIImageView().then {
-        $0.backgroundColor = UIColor.black.withAlphaComponent(0.4)
-        $0.layer.cornerRadius = 30
-    }
-    
-//    private let gradientLayer = CAGradientLayer()
+    private let gradientLayer = CAGradientLayer()
     
     private let dateLabel = UILabel().then {
         $0.textColor = .white
@@ -57,7 +52,7 @@ class HotCollectionViewCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupConstraints()
-//        setupGradientLayer()
+        setupGradientLayer()
     }
 
     required init?(coder: NSCoder) {
@@ -66,17 +61,12 @@ class HotCollectionViewCell: UICollectionViewCell {
     
     private func setupConstraints() {
         contentView.addSubview(backImg)
-        backImg.addSubview(blackView)
         
         [dateLabel, locationLabel, profile].forEach{
-            blackView.addSubview($0)
+            backImg.addSubview($0)
         }
         
         backImg.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-        }
-        
-        blackView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
 
@@ -98,20 +88,14 @@ class HotCollectionViewCell: UICollectionViewCell {
         }
     }
     
-//    override func layoutSubviews() {
-//        super.layoutSubviews()
-//        gradientLayer.frame = backImg.bounds
-//    }
-//    
-//       private func setupGradientLayer() {
-//           gradientLayer.colors = [UIColor.black.withAlphaComponent(0.65).cgColor, UIColor.clear.cgColor]
-//           gradientLayer.locations = [0.0, 1.0]
-//           gradientLayer.startPoint = CGPoint(x: 1.0, y: 1.0)
-//           gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.3)
-//           gradientLayer.cornerRadius = 30
-//           backImg.layer.insertSublayer(gradientLayer, at: 0)
-//           gradientLayer.frame = backImg.bounds
-//       }
+       private func setupGradientLayer() {
+           
+           gradientLayer.colors = [UIColor.black.withAlphaComponent(0.65).cgColor, UIColor.clear.cgColor]
+           gradientLayer.startPoint = CGPoint(x: 1.0, y: 1.0)
+           gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.3)
+           backImg.layer.insertSublayer(gradientLayer, at: 0)
+           
+       }
        
     func configure(with hotLog: PinLogSummary) async {
         locationLabel.text = hotLog.location
@@ -126,6 +110,7 @@ class HotCollectionViewCell: UICollectionViewCell {
         } else {
             backImg.backgroundColor = .black
         }
+        gradientLayer.frame = backImg.frame.offsetBy(dx: 0, dy: 2)
         
         // 프로필 사진
         if let photoURL = try? await FirestoreManager.shared.fetchUserProfileImageURL(userId: hotLog.authorId), let url = URL(string: photoURL) {

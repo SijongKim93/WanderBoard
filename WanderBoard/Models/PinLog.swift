@@ -102,7 +102,7 @@ struct PinLog: Identifiable, Codable {
     var createdAt: Date?
     var pinCount: Int?
     var pinnedBy: [String]?
-    var totalSpendingAmount: Int? 
+    var totalSpendingAmount: Int?
     var isSpendingPublic: Bool
     var maxSpendingAmount: Int?
     var expenses: [DailyExpenses]?

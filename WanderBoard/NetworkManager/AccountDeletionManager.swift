@@ -10,11 +10,29 @@ import FirebaseAuth
 import CoreData
 import FirebaseFirestore
 import FirebaseFirestoreSwift
+import FirebaseStorage
 
 final class AccountDeletionManager {
     static let shared = AccountDeletionManager()
     private let db = Firestore.firestore()
+    private let storage = Storage.storage()
     private init() { }
+    
+    
+    // 7월 2일 추가: 회원 탈퇴 시 관련 이미지를 삭제하는 기능 추가
+    private func deleteImages(from pinLogs: [PinLog]) async throws {
+        for pinLog in pinLogs {
+            for media in pinLog.media {
+                let storageRef = storage.reference(forURL: media.url)
+                do {
+                    try await storageRef.delete()
+                } catch {
+                    print("Failed to delete image: \(error)")
+                    throw error
+                }
+            }
+        }
+    }
     
     // 사용자의 데이터를 Firestore에서 삭제하는 함수 (회원 탈퇴)
     func deleteUserData(uid: String) async throws {
@@ -23,8 +41,11 @@ final class AccountDeletionManager {
     }
     
     // 회원 탈퇴 시 특정 사용자의 모든 PinLog 데이터를 삭제하는 함수
+    // 7월 2일 변경: 회원 탈퇴 시 핀로그와 함께 이미지를 먼저 삭제하도록 수정
     func deletePinLogsForUser(userId: String) async throws {
         let snapshot = try await db.collection("pinLogs").whereField("authorId", isEqualTo: userId).getDocuments()
+        let pinLogs = snapshot.documents.compactMap { try? $0.data(as: PinLog.self) }
+        try await deleteImages(from: pinLogs)
         for document in snapshot.documents {
             try await document.reference.delete()
         }

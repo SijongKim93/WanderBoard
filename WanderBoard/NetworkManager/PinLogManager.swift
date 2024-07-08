@@ -32,6 +32,26 @@ class PinLogManager {
         }
     }
     
+    // 7월 2일 추가: 핀로그 삭제 시 관련 이미지를 삭제하는 기능 추가
+    func deleteImages(from pinLog: PinLog) async throws {
+        let storage = Storage.storage()
+        for media in pinLog.media {
+            let storageRef = storage.reference(forURL: media.url)
+            do {
+                try await storageRef.delete()
+            } catch let error as NSError {
+                if let errorCode = StorageErrorCode(rawValue: error.code), errorCode == .objectNotFound {
+                    print("Object \(media.url) does not exist.")
+                    // Continue with the next image
+                    continue
+                } else {
+                    print("Failed to delete image: \(error)")
+                    throw error
+                }
+            }
+        }
+    }
+    
     func createOrUpdatePinLog(pinLog: inout PinLog, images: [UIImage], imageLocations: [CLLocationCoordinate2D], isRepresentativeFlags: [Bool]) async throws -> PinLog {
         var mediaObjects: [Media] = []
         
@@ -104,9 +124,16 @@ class PinLogManager {
         return pinLog
     }
     
+    // 7월 2일 변경: 핀로그 삭제 시 이미지를 먼저 삭제하도록 수정
     func deletePinLog(pinLogId: String) async throws {
         let documentRef = db.collection("pinLogs").document(pinLogId)
-        try await documentRef.delete()
+        do {
+            try await documentRef.delete()
+            print("Pin log \(pinLogId) deleted successfully.")
+        } catch {
+            print("Failed to delete pin log: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     //디테일뷰에 아이디로 데이터 가져오기

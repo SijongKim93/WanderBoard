@@ -19,10 +19,9 @@ import Contacts
 import CoreLocation
 import ImageIO
 import SwiftUI
-
+import Kingfisher
 
 class DetailViewController: UIViewController {
-    
     weak var delegate: DetailViewControllerDelegate?
     
     var selectedImages: [(UIImage, Bool, CLLocationCoordinate2D?)] = []
@@ -258,7 +257,6 @@ class DetailViewController: UIViewController {
         }
     }
     
-    
     func setupUI() {
         view.addSubview(detailViewCollectionView)
         view.addSubview(detailViewButton.view)
@@ -461,7 +459,6 @@ class DetailViewController: UIViewController {
             showButtonFeedBackView()
 
         }
-        
         // Firestore에 업데이트
         guard let pinLogId = pinLog.id else { return }
         let pinLogRef = Firestore.firestore().collection("pinLogs").document(pinLogId)
@@ -607,6 +604,7 @@ class DetailViewController: UIViewController {
         } else {
             profileImageView.backgroundColor = .black
         }
+        
         friendCollectionView.isHidden = pinLog.attendeeIds.isEmpty
         
         // 대표 이미지와 텍스트 추출
@@ -624,22 +622,12 @@ class DetailViewController: UIViewController {
         } else {
             self.detailViewCollectionView.reloadItems(at: [IndexPath(item: 1, section: 0)])
         }
+        
         DispatchQueue.main.async {
             self.detailViewCollectionView.reloadData()
         }
         
         self.expandableButtonAction()
-    }
-    
-    //프로필 이미지
-    func loadImage(from url: URL, completion: @escaping (UIImage?) -> Void) {
-        AF.request(url).response { response in
-            if let data = response.data, let image = UIImage(data: data) {
-                completion(image)
-            } else {
-                completion(nil)
-            }
-        }
     }
     
     func updateSelectedFriends(with attendeeIds: [String]) {
@@ -897,24 +885,32 @@ class DetailViewController: UIViewController {
         let group = DispatchGroup()
         
         for media in mediaItems {
-            guard URL(string: media.url) != nil else { continue }
+            guard let url = URL(string: media.url) else { continue }
             group.enter()
-            loadImage(from: media.url) { [weak self] image in
+            
+            KingfisherManager.shared.retrieveImage(with: url, options: nil) { [weak self] result in
                 guard let self = self else {
                     group.leave()
                     return
                 }
-                if let image = image {
+                
+                switch result {
+                case .success(let value):
+                    let image = value.image
                     let location: CLLocationCoordinate2D? = (media.latitude != nil && media.longitude != nil) ? CLLocationCoordinate2D(latitude: media.latitude!, longitude: media.longitude!) : nil
                     if !self.selectedImages.contains(where: { $0.0 == image && $0.1 == media.isRepresentative && $0.2?.latitude == location?.latitude && $0.2?.longitude == location?.longitude }) {
                         self.selectedImages.append((image, media.isRepresentative, location))
                     }
+                case .failure(let error):
+                    print("Failed to load image: \(error)")
                 }
+                
                 group.leave()
             }
         }
         
-        group.notify(queue: .main) {
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
             if let galleryCell = self.detailViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GalleryCollectionViewCell {
                 galleryCell.selectedImages = self.selectedImages
             }

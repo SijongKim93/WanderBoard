@@ -100,9 +100,9 @@ struct PinLog: Identifiable, Codable {
     var attendeeIds: [String]
     var isPublic: Bool
     var createdAt: Date?
-    var pinCount: Int? //핀 갯수 추가 - 한빛
-    var pinnedBy: [String]? // 핀 찍은 유저id 배열 - 한빛
-    var totalSpendingAmount: Int? //핀로그당 사용한 최종금액 - 시안
+    var pinCount: Int?
+    var pinnedBy: [String]?
+    var totalSpendingAmount: Int? 
     var isSpendingPublic: Bool
     var maxSpendingAmount: Int?
     var expenses: [DailyExpenses]?

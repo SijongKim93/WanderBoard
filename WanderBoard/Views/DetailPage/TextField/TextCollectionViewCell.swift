@@ -27,6 +27,7 @@ class TextCollectionViewCell: UICollectionViewCell {
     let titleLabel = UILabel().then(){
         $0.textColor = .font
         $0.font = UIFont.boldSystemFont(ofSize: 20)
+        $0.numberOfLines = 2
         $0.textAlignment = .center
     }
     

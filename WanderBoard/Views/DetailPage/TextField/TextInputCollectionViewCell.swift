@@ -69,6 +69,9 @@ class TextInputCollectionViewCell: UICollectionViewCell {
         super.init(frame: frame)
         setupConstraint()
         setupTapGesture()
+        
+        titleTextField.inputAccessoryView = createToolbar()
+        contentTextView.inputAccessoryView = createToolbar()
     }
     
     required init?(coder: NSCoder) {
@@ -132,9 +135,43 @@ class TextInputCollectionViewCell: UICollectionViewCell {
         contentTextView.text = pinLog.content
         placeholderLabel.isHidden = !contentTextView.text.isEmpty
     }
+    
+    //툴바 생성 함수
+    func createToolbar() -> UIToolbar {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(dismissKeyboard))
+        
+        toolbar.items = [flexSpace, doneButton]
+        return toolbar
+    }
+
 }
 
 extension TextInputCollectionViewCell: UITextViewDelegate, UITextFieldDelegate {
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text.isEmpty {
+            return true
+        }
+        
+        let currentText = textView.text as NSString
+        let newText = currentText.replacingCharacters(in: range, with: text)
+        
+        let fittingSize = CGSize(width: textView.frame.width, height: CGFloat.greatestFiniteMagnitude)
+        let size = textView.sizeThatFits(fittingSize)
+        
+        if newText.count <= 220 && size.height <= textView.frame.height {
+            setTextViewBorderColor(UIColor.darkgray)
+            return true
+        } else {
+            provideHapticFeedback()
+            setTextViewBorderColor(UIColor.red, alpha: 0.1)
+            return false
+        }
+    }
+    
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.text.isEmpty {
             placeholderLabel.isHidden = true
@@ -150,14 +187,6 @@ extension TextInputCollectionViewCell: UITextViewDelegate, UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == titleTextField {
             contentTextView.becomeFirstResponder()
-        }
-        return true
-    }
-    
-    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        if text == "\n" {
-            textView.insertText("\n")
-            return false
         }
         return true
     }

@@ -114,6 +114,6 @@ struct PageControlButton: View {
 //    }
 }
 
-//#Preview {
-//    PageControlButton()
-//}
+#Preview {
+    PageControlButton()
+}

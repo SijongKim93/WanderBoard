@@ -7,6 +7,7 @@
 
 import UIKit
 import SnapKit
+import Then
 
 class ContentsPageViewController: UIViewController {
     
@@ -68,12 +69,16 @@ class ContentsPageViewController: UIViewController {
         return xButton
     }()
     
+    private var buttonGradientView = UIView()
+    private var gradientLayer = CAGradientLayer()
+    
     private var wanderButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Let's Wander!", for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = .black
         button.layer.cornerRadius = 10
+        button.alpha = 0
         return button
     }()
     
@@ -99,9 +104,30 @@ class ContentsPageViewController: UIViewController {
         
         configureUI()
         makeConstraints()
-        setGradient()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if showWanderButton {
+            wanderButton.transform = CGAffineTransform(translationX: 0, y: 30) //애니메이션 될 공간
+            buttonGradientView.alpha = 0
+            UIView.animate(withDuration: 0.7, delay: 1, options: .curveEaseIn, animations: { //화면이 나타난 후 1초 뒤 0.7의 속도로 서서히 들어오며 보임
+                self.wanderButton.transform = .identity
+                self.buttonGradientView.alpha = 1
+                self.wanderButton.alpha = 1
+            }, completion: nil)
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        resetWanderButton()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        gradientLayer.frame = buttonGradientView.bounds
+    }
     
     private func configureUI() {
         
@@ -118,7 +144,12 @@ class ContentsPageViewController: UIViewController {
         }
         
         if showWanderButton {
+            view.addSubview(buttonGradientView)
+            gradientLayer.colors = [UIColor.white.withAlphaComponent(0.0).cgColor, UIColor.white.withAlphaComponent(0.7).cgColor, UIColor.white.cgColor]
+            gradientLayer.locations = [0, 0.3, 1]
+            buttonGradientView.layer.insertSublayer(gradientLayer, at: 0)
             view.addSubview(wanderButton)
+            view.bringSubviewToFront(wanderButton)
         }
         
         xButton.addTarget(self, action: #selector(xButtonTapped), for: .touchUpInside)
@@ -159,6 +190,11 @@ class ContentsPageViewController: UIViewController {
         }
         
         if showWanderButton {
+            buttonGradientView.snp.makeConstraints(){
+                $0.bottom.equalToSuperview()
+                $0.left.right.equalToSuperview()
+                $0.height.equalTo(200)
+            }
             wanderButton.snp.makeConstraints {
                 $0.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom).offset(-20)
                 $0.centerX.equalToSuperview()
@@ -198,17 +234,26 @@ class ContentsPageViewController: UIViewController {
         }
     }
     
-    func setGradient() {
-        let maskedView = UIView(frame: CGRect(x: 0, y: ( view.frame.height - 150), width: view.frame.height, height: 150))
-        let gradientLayer = CAGradientLayer()
-        
-        maskedView.backgroundColor = .black
-        gradientLayer.frame = maskedView.bounds
-        gradientLayer.colors = [UIColor.clear.cgColor, UIColor.white.withAlphaComponent(0.7), UIColor.white.withAlphaComponent(0.9), UIColor.white.cgColor]
-        gradientLayer.locations = [0, 0.5, 0.7, 1]
-        maskedView.layer.mask = gradientLayer
-        view.addSubview(maskedView)
-        maskedView.isUserInteractionEnabled = false
+//    func setGradient() {
+//        let gradientLayer = CAGradientLayer()
+//        gradientLayer.frame = buttonGradientView.bounds
+//        gradientLayer.colors = [UIColor.clear.cgColor, UIColor.white.withAlphaComponent(0.9)]
+//        gradientLayer.locations = [0, 1]
+//        buttonGradientView.layer.addSublayer(gradientLayer)
+//    }
+//    
+//    override func viewDidLayoutSubviews() {
+//            super.viewDidLayoutSubviews()
+//            if showWanderButton {
+//                setGradient()
+//            }
+//        }
+    
+    //화면 전환후 다시 돌아오면 애니메이션이 다시 실행되도록
+    private func resetWanderButton() {
+        wanderButton.alpha = 0
+        buttonGradientView.alpha = 0
+        wanderButton.transform = CGAffineTransform(translationX: 0, y: 30)
     }
     
     @objc private func xButtonTapped() {

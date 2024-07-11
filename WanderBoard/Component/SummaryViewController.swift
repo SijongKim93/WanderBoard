@@ -259,7 +259,7 @@ class SummaryViewController: UIViewController, UITextFieldDelegate, UITextViewDe
         guard let text = titleTextField.text as NSString? else { return true }
         let newText = text.replacingCharacters(in: range, with: string)
         
-        if newText.count <= 18 {
+        if newText.count <= 14 {
             titleTextField.layer.borderColor = UIColor.darkgray.cgColor
             return true
         } else {

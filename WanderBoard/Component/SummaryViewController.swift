@@ -152,6 +152,12 @@ class SummaryViewController: UIViewController, UITextFieldDelegate, UITextViewDe
         saveButton.addTarget(self, action: #selector(saveButtonTapped), for: .touchUpInside)
     }
 
+    private func provideHapticFeedback() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.error)
+    }
+    
+    
     private func populateData() {
         categoryLabel.text = " ✔︎ 지출 구분: \(selectedCategory ?? "")"
         if let date = selectedDate {
@@ -246,6 +252,34 @@ class SummaryViewController: UIViewController, UITextFieldDelegate, UITextViewDe
         if textView.text.isEmpty {
             textView.text = "Note.."
             textView.textColor = UIColor.darkgray
+        }
+    }
+    
+    func textField(_ _textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard let text = titleTextField.text as NSString? else { return true }
+        let newText = text.replacingCharacters(in: range, with: string)
+        
+        if newText.count <= 18 {
+            titleTextField.layer.borderColor = UIColor.darkgray.cgColor
+            return true
+        } else {
+            provideHapticFeedback()
+            titleTextField.layer.borderColor = UIColor.red.withAlphaComponent(0.1).cgColor
+            return false
+        }
+    }
+    
+    func textView(_ _textView: UITextView, shouldChangeTextIn range: NSRange, replacementText string: String) -> Bool {
+        guard let text = memoTextView.text as NSString? else { return true }
+        let newText = text.replacingCharacters(in: range, with: string)
+        
+        if newText.count <= 36 {
+            memoTextView.layer.borderColor = UIColor.darkgray.cgColor
+            return true
+        } else {
+            provideHapticFeedback()
+            memoTextView.layer.borderColor = UIColor.red.withAlphaComponent(0.1).cgColor
+            return false
         }
     }
 }

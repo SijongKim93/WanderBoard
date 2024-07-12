@@ -22,6 +22,8 @@ import SwiftUI
 import Kingfisher
 
 class DetailViewController: UIViewController {
+    
+    
     weak var delegate: DetailViewControllerDelegate?
     
     var selectedImages: [(UIImage, Bool, CLLocationCoordinate2D?)] = []

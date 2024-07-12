@@ -18,6 +18,7 @@ import FirebaseStorage
 import FirebaseFirestore
 import Contacts
 import Kingfisher
+import Alamofire
 
 
 protocol DetailInputViewControllerDelegate: AnyObject {
@@ -64,6 +65,9 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
     let subTextFieldMinHeight: CGFloat = 90
     var subTextFieldHeightConstraint: Constraint?
     var publicViewHeightConstraint: Constraint?
+    
+    private var selectedStartDate: Date?
+    private var selectedEndDate: Date?
     
     lazy var detailInputViewCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -246,11 +250,6 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         collectionView.showsHorizontalScrollIndicator = false
         return collectionView
     }()
-
-    // MARK: 토글토글
-    
-    private var selectedStartDate: Date?
-    private var selectedEndDate: Date?
         
     func didSelectDates(startDate: Date, endDate: Date) {
         print("didSelectDates 호출됨")
@@ -561,83 +560,102 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
     
     func configureView(with pinLog: PinLog) {
         DispatchQueue.main.async {
-            self.expenses = pinLog.expenses ?? []
-            self.spendingPublicSwitch.isOn = pinLog.isSpendingPublic
-            self.locationLeftLabel.text = pinLog.location
-            self.publicSwitch.isOn = pinLog.isPublic
-            self.spendingPublicSwitch.isOn = pinLog.isSpendingPublic
-
-            self.updateDateLabel(with: pinLog.startDate, endDate: pinLog.endDate)
-
-            self.selectedImages.removeAll()
-            self.imageLocations.removeAll()
-
-            var representativeImage: (UIImage, Bool, CLLocationCoordinate2D?)? = nil
-            var otherImages: [(UIImage, Bool, CLLocationCoordinate2D?)] = []
-
-            let dispatchGroup = DispatchGroup()
-
-            for media in pinLog.media {
-                dispatchGroup.enter()
-                if let url = URL(string: media.url) {
-                    URLSession.shared.dataTask(with: url) { data, response, error in
-                        if let data = data, let image = UIImage(data: data) {
-                            let location = media.latitude != nil && media.longitude != nil ? CLLocationCoordinate2D(latitude: media.latitude!, longitude: media.longitude!) : nil
-                            let imageData = (image, media.isRepresentative, location)
-
-                            if media.isRepresentative {
-                                representativeImage = imageData
-                            } else {
-                                otherImages.append(imageData)
-                            }
-                        } else {
-                            print("Error loading image: \(String(describing: error))")
-                        }
-                        dispatchGroup.leave()
-                    }.resume()
-                } else {
-                    dispatchGroup.leave()
-                }
-            }
-
-            dispatchGroup.notify(queue: .main) {
-                if let repImage = representativeImage {
-                    self.selectedImages.append(repImage)
-                }
-                self.selectedImages.append(contentsOf: otherImages)
-
-                self.representativeImageIndex = self.selectedImages.firstIndex { $0.1 }
-                self.updateRepresentativeImage()
-
-                if let galleryCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
-                    galleryCell.selectedImages = self.selectedImages
-                    galleryCell.photoInputCollectionView.reloadData()
-                }
-            }
-
-            if self.isInitialLoad {
-                self.loadSelectedFriends(pinLog: pinLog) {
-                    self.mateCollectionView.reloadData()
-                    self.isInitialLoad = false
-                }
-            } else {
-                self.mateCollectionView.reloadData()
-            }
-
-            if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
-                textInputCell.configure(with: pinLog)
-            } else {
-                self.detailInputViewCollectionView.scrollToItem(at: IndexPath(item: 1, section: 0), at: .centeredHorizontally, animated: false)
-                DispatchQueue.main.async {
-                    if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
-                        textInputCell.configure(with: pinLog)
-                    }
-                }
-            }
+            self.configureSwitches(pinLog)
+            self.configureLocationAndDate(pinLog)
+            self.configureImages(pinLog)
+            self.configureFriends(pinLog)
+            self.configureTextInput(pinLog)
+            self.updateTotalSpendingAmount(with: pinLog.expenses ?? [])
             self.switchToPage(0)
         }
     }
 
+    private func configureSwitches(_ pinLog: PinLog) {
+        self.spendingPublicSwitch.isOn = pinLog.isSpendingPublic
+        self.publicSwitch.isOn = pinLog.isPublic
+    }
+
+    private func configureLocationAndDate(_ pinLog: PinLog) {
+        self.locationLeftLabel.text = pinLog.location
+        self.updateDateLabel(with: pinLog.startDate, endDate: pinLog.endDate)
+    }
+
+    private func configureImages(_ pinLog: PinLog) {
+        self.selectedImages.removeAll()
+        self.imageLocations.removeAll()
+
+        let dispatchGroup = DispatchGroup()
+
+        for media in pinLog.media {
+            dispatchGroup.enter()
+            self.loadImage(from: media, dispatchGroup: dispatchGroup)
+        }
+
+        dispatchGroup.notify(queue: .main) {
+            self.updateRepresentativeImage()
+            self.reloadGalleryCell()
+        }
+    }
+
+    private func loadImage(from media: Media, dispatchGroup: DispatchGroup) {
+        guard let url = URL(string: media.url) else {
+            dispatchGroup.leave()
+            return
+        }
+
+        AF.request(url).responseData { [weak self] response in
+            defer { dispatchGroup.leave() }
+            guard let self = self else { return }
+
+            switch response.result {
+            case .success(let data):
+                if let image = UIImage(data: data) {
+                    let location = media.latitude != nil && media.longitude != nil ? CLLocationCoordinate2D(latitude: media.latitude!, longitude: media.longitude!) : nil
+                    let imageData = (image, media.isRepresentative, location)
+
+                    if media.isRepresentative {
+                        self.selectedImages.insert(imageData, at: 0)
+                    } else {
+                        self.selectedImages.append(imageData)
+                    }
+                }
+            case .failure(let error):
+                print("Error loading image: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func configureFriends(_ pinLog: PinLog) {
+        if self.isInitialLoad {
+            self.loadSelectedFriends(pinLog: pinLog) {
+                self.mateCollectionView.reloadData()
+                self.isInitialLoad = false
+            }
+        } else {
+            self.mateCollectionView.reloadData()
+        }
+    }
+
+    private func configureTextInput(_ pinLog: PinLog) {
+        if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
+            textInputCell.configure(with: pinLog)
+        } else {
+            self.detailInputViewCollectionView.scrollToItem(at: IndexPath(item: 1, section: 0), at: .centeredHorizontally, animated: false)
+            DispatchQueue.main.async {
+                if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
+                    textInputCell.configure(with: pinLog)
+                }
+            }
+        }
+    }
+
+    private func reloadGalleryCell() {
+        if let galleryCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
+            galleryCell.selectedImages = self.selectedImages
+            galleryCell.photoInputCollectionView.reloadData()
+        }
+    }
+    
     func loadSavedLocation() {
         let userId = Auth.auth().currentUser?.uid ?? ""
         let documentRef = Firestore.firestore().collection("users").document(userId)
@@ -736,26 +754,33 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         guard validateInputs() else { return }
         
         navigationItem.rightBarButtonItem?.isEnabled = false
-
         showProgressView()
 
         Task {
             do {
                 var pinLog = try await createOrUpdatePinLog()
                 let savedPinLog = try await savePinLog(pinLog: &pinLog)
-                self.savedPinLogId = savedPinLog.id
-                self.pinLog = savedPinLog
-                self.pinLog?.expenses = self.expenses
-                delegate?.didSavePinLog(savedPinLog)
-                hideProgressView()
-                navigationItem.rightBarButtonItem?.isEnabled = true
-                dismiss(animated: true, completion: nil)
+                finalizeSavePinLog(savedPinLog: savedPinLog)
             } catch {
-                hideProgressView()
-                showAlert(title: "오류", message: "데이터 저장에 실패했습니다.")
-                navigationItem.rightBarButtonItem?.isEnabled = true
+                handleSaveError(error: error)
             }
         }
+    }
+
+    private func finalizeSavePinLog(savedPinLog: PinLog) {
+        self.savedPinLogId = savedPinLog.id
+        self.pinLog = savedPinLog
+        self.pinLog?.expenses = self.expenses
+        delegate?.didSavePinLog(savedPinLog)
+        hideProgressView()
+        navigationItem.rightBarButtonItem?.isEnabled = true
+        dismiss(animated: true, completion: nil)
+    }
+
+    private func handleSaveError(error: Error) {
+        hideProgressView()
+        showAlert(title: "오류", message: "데이터 저장에 실패했습니다.")
+        navigationItem.rightBarButtonItem?.isEnabled = true
     }
     
     private func validateInputs() -> Bool {
@@ -773,7 +798,6 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
             showAlert(title: "앨범 추가", message: "최소한 하나의 이미지를 선택해주세요.")
             return false
         }
-
         return true
     }
     
@@ -852,7 +876,6 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         } else if !selectedImages.isEmpty {
             selectedImages[0].1 = true
         }
-
         return pinLog
     }
     

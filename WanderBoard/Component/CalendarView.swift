@@ -15,6 +15,7 @@ struct CalendarView: View {
     
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter
+    private let displayDateFormatter: DateFormatter
     
     var onDatesSelected: ((Date, Date) -> Void)?
     @Environment(\.presentationMode) var presentationMode
@@ -23,6 +24,8 @@ struct CalendarView: View {
         self.onDatesSelected = onDatesSelected
         dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMMM yyyy"
+        displayDateFormatter = DateFormatter()
+        displayDateFormatter.dateFormat = "MM.dd EEEE"
     }
     
     var body: some View {
@@ -84,6 +87,24 @@ struct CalendarView: View {
                         currentMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
                     }
                 })
+            }
+            Spacer()
+            
+            if let startDate = selectedStartDate, let endDate = selectedEndDate {
+                HStack {
+                    Text("\(displayDateFormatter.string(from: startDate))")
+                    Text("~")
+                    Text("\(displayDateFormatter.string(from: endDate))")
+                    Text("(\(calculateDaysBetween(start: startDate, end: endDate)))")
+                        .foregroundStyle(.darkgray)
+
+                }
+            } else if let startDate = selectedStartDate {
+                HStack {
+                    Text("\(displayDateFormatter.string(from: startDate))")
+                    Text("~")
+                    Text("")
+                }
             }
             
             Spacer()
@@ -176,6 +197,12 @@ struct CalendarView: View {
     
     private func isSelectionComplete() -> Bool {
         return selectedStartDate != nil && selectedEndDate != nil
+    }
+    
+    private func calculateDaysBetween(start: Date, end: Date) -> String {
+        let components = calendar.dateComponents([.day], from: start, to: end)
+        let dayCount = components.day ?? 0
+        return dayCount == 0 ? "1 Day" : "\(dayCount + 1) Days"
     }
 }
 

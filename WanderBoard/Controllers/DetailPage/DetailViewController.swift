@@ -25,6 +25,8 @@ import Kingfisher
 // MARK: - Properties
 
 class DetailViewController: UIViewController {
+    
+    
     weak var delegate: DetailViewControllerDelegate?
     
     var selectedImages: [(UIImage, Bool, CLLocationCoordinate2D?)] = []

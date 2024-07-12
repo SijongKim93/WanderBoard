@@ -182,9 +182,9 @@ class SignUpViewController: UIViewController, PHPickerViewControllerDelegate, UI
     
     private let privacyCheckBox: UIButton = {
         var configuration = UIButton.Configuration.plain()
-        configuration.image = UIImage(systemName: "circle")
-        configuration.imagePadding = 8
-        configuration.baseForegroundColor = .font
+//        configuration.image = UIImage(systemName: "circle")
+//        configuration.imagePadding = 8
+//        configuration.baseForegroundColor = .font
         
         let button = UIButton(configuration: configuration, primaryAction: nil)
         button.isEnabled = false
@@ -209,9 +209,9 @@ class SignUpViewController: UIViewController, PHPickerViewControllerDelegate, UI
         button.setAttributedTitle(titleText, for: .normal)
         
         button.configurationUpdateHandler = { button in
-            let image = button.isSelected ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle")
+//            let image = button.isSelected ? UIImage(systemName: "checkmark.circle") : UIImage(systemName: "circle")
             var updatedConfiguration = button.configuration
-            updatedConfiguration?.image = image
+//            updatedConfiguration?.image = image
             button.configuration = updatedConfiguration
         }
         

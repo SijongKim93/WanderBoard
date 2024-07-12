@@ -12,6 +12,8 @@ import Then
 class TextInputCollectionViewCell: UICollectionViewCell {
     static let identifier = String(describing: TextInputCollectionViewCell.self)
     
+    weak var delegate: TextInputCollectionViewCellDelegate?
+    
     var pinLog: PinLog?
     
     lazy var titleTextField = UITextField().then {
@@ -173,15 +175,25 @@ extension TextInputCollectionViewCell: UITextViewDelegate, UITextFieldDelegate {
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
+        delegate?.keyboardWillShow()
         if textView.text.isEmpty {
             placeholderLabel.isHidden = true
         }
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
+        delegate?.keyboardWillHide()
         if textView.text.isEmpty {
             placeholderLabel.isHidden = false
         }
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        delegate?.keyboardWillShow()
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        delegate?.keyboardWillHide()
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

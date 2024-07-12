@@ -22,7 +22,11 @@ import Kingfisher
 
 protocol DetailInputViewControllerDelegate: AnyObject {
     func didSavePinLog(_ pinLog: PinLog)
-    
+}
+
+protocol TextInputCollectionViewCellDelegate: AnyObject {
+    func keyboardWillShow()
+    func keyboardWillHide()
 }
 
 class DetailInputViewController: UIViewController, CalendarHostingControllerDelegate, SingleDayCalendarHostingControllerDelegate, AmountInputHostingControllerDelegate, CategoryInputCollectionViewCellDelegate, SpendingListViewControllerDelegate, SummaryViewControllerDelegate {
@@ -523,6 +527,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         
         navigationItem.rightBarButtonItems = [doneButton]
         navigationController?.navigationBar.tintColor = .font
+
     }
     
     func didSaveExpense(_ expense: Expense) {
@@ -532,6 +537,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
             let newDailyExpense = DailyExpenses(date: expense.date, expenses: [expense])
             expenses.append(newDailyExpense)
         }
+        
         sortDailyExpensesByDate()
         updateTotalSpendingAmount(with: expenses)
     }
@@ -550,6 +556,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         }
         present(calendarVC, animated: true, completion: nil)
     }
+    
     
     @objc func dismissDetailView(_ sender:UIButton) {
         dismiss(animated: true)
@@ -1078,6 +1085,7 @@ extension DetailInputViewController: UICollectionViewDelegate, UICollectionViewD
                 return cell
             case 1:
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TextInputCollectionViewCell.identifier, for: indexPath) as! TextInputCollectionViewCell
+                cell.delegate = self
                 return cell
             case 2:
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CategoryInputCollectionViewCell.identifier, for: indexPath) as! CategoryInputCollectionViewCell
@@ -1256,5 +1264,15 @@ extension DetailInputViewController: UITextViewDelegate {
             UIView.setAnimationsEnabled(true)
             textView.layoutIfNeeded()
         }
+    }
+}
+
+extension DetailInputViewController: TextInputCollectionViewCellDelegate {
+    func keyboardWillShow() {
+        self.detailInputViewButton.view.alpha = 0
+    }
+    
+    func keyboardWillHide() {
+        self.detailInputViewButton.view.alpha = 1
     }
 }

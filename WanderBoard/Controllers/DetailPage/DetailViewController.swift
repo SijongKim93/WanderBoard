@@ -224,7 +224,6 @@ class DetailViewController: UIViewController {
         setupActionButton()
         updateColor()
         checkId()
-        loadData()
         
         let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(imageTapped(_:)))
         profileArea.isUserInteractionEnabled = true
@@ -237,6 +236,7 @@ class DetailViewController: UIViewController {
         if let pinLogId = pinLogId {
             Task {
                 await fetchExpenses(for: pinLogId)
+                loadData()
             }
         }
     }

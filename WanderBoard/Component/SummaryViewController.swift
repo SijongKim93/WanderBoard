@@ -215,22 +215,21 @@ class SummaryViewController: UIViewController, UITextFieldDelegate, UITextViewDe
     }
     
     private func showButtonFeedBackView() {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let buttonFeedBackVC = ButtonFeedBackViewController()
             let feedbackWindow = UIWindow(windowScene: windowScene)
             feedbackWindow.rootViewController = buttonFeedBackVC
             feedbackWindow.backgroundColor = .clear
             feedbackWindow.windowLevel = .alert + 1
-            feedbackWindow.isHidden = false
+            feedbackWindow.makeKeyAndVisible()
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 feedbackWindow.isHidden = true
             }
         }
     }
-
-    @objc func textViewDidChange(_ textView: UITextView) {
+    
+    private func handleTextViewPlaceholder(_ textView: UITextView) {
         if textView.text.isEmpty {
             textView.text = "Note.."
             textView.textColor = .darkgray
@@ -240,19 +239,17 @@ class SummaryViewController: UIViewController, UITextFieldDelegate, UITextViewDe
             textView.text = nil
         }
     }
-    
-    @objc func textViewDidBeginEditing(_ textView: UITextView) {
-        if textView.textColor == UIColor.darkgray {
-            textView.text = nil
-            textView.textColor = .font
-        }
+
+    @objc func textViewDidChange(_ textView: UITextView) {
+        handleTextViewPlaceholder(textView)
     }
-    
+
+    @objc func textViewDidBeginEditing(_ textView: UITextView) {
+        handleTextViewPlaceholder(textView)
+    }
+
     @objc func textViewDidEndEditing(_ textView: UITextView) {
-        if textView.text.isEmpty {
-            textView.text = "Note.."
-            textView.textColor = UIColor.darkgray
-        }
+        handleTextViewPlaceholder(textView)
     }
     
     func textField(_ _textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {

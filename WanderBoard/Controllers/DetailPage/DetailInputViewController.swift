@@ -31,17 +31,8 @@ protocol TextInputCollectionViewCellDelegate: AnyObject {
 }
 
 class DetailInputViewController: UIViewController, CalendarHostingControllerDelegate, SingleDayCalendarHostingControllerDelegate, AmountInputHostingControllerDelegate, CategoryInputCollectionViewCellDelegate, SpendingListViewControllerDelegate, SummaryViewControllerDelegate {
-    func didSelectCategory(category: String, imageName: String) {
-        selectedCategory = category
-        selectedImageName = imageName
-        showSingleDayCalendar()
-    }
     
-    func didSelectCategory(category: String) {
-        selectedCategory = category
-        showSingleDayCalendar()
-    }
-    
+    //MARK: - Properties
     var progressViewController: ProgressViewController?
     var savedLocation: CLLocationCoordinate2D?
     var savedPinLogId: String?
@@ -73,6 +64,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
     private var selectedStartDate: Date?
     private var selectedEndDate: Date?
     
+    //MARK: - UI Elements
     lazy var detailInputViewCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
@@ -254,28 +246,8 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         collectionView.showsHorizontalScrollIndicator = false
         return collectionView
     }()
-        
-    func didSelectDates(startDate: Date, endDate: Date) {
-        print("didSelectDates 호출됨")
-        updateDateLabel(with: startDate, endDate: endDate)
-        selectedStartDate = startDate
-        selectedEndDate = endDate
-    }
     
-    
-    func updateDateLabel(with startDate: Date, endDate: Date) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let startDateString = dateFormatter.string(from: startDate)
-        let endDateString = dateFormatter.string(from: endDate)
-        let dateRangeString = "\(startDateString) ~ \(endDateString)"
-        print("updateDateLabel 호출됨: \(dateRangeString)")
-        
-        // dateLabel의 텍스트 업데이트
-        self.dateLabel.text = dateRangeString
-        
-    }
-    
+    //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -297,7 +269,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
             spendingListVC.delegate = self
         }
     }
-  
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationItem.largeTitleDisplayMode = .never
@@ -310,29 +282,40 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
             spendingListVC.pinLog = pinLog
         }
     }
-
+    
+    //MARK: - Delegate Methods
+    func didSelectCategory(category: String, imageName: String) {
+        selectedCategory = category
+        selectedImageName = imageName
+        showSingleDayCalendar()
+    }
+    
+    func didSelectCategory(category: String) {
+        selectedCategory = category
+        showSingleDayCalendar()
+    }
+    
     func didUpdateExpenses(_ expenses: [DailyExpenses]) {
         pinLog?.expenses = expenses
     }
     
-    @objc private func categoryTapped(_ sender: UIButton) {
-        let selectedCategoryTuple = categories[sender.tag]
-        selectedCategory = selectedCategoryTuple.1
-        selectedImageName = selectedCategoryTuple.0
-        showSingleDayCalendar()
-    }
-
-    @objc private func showCalendar() {
-        let calendarVC = CalendarHostingController()
-        calendarVC.delegate = self
-        calendarVC.modalPresentationStyle = .pageSheet
-        if let sheet = calendarVC.sheetPresentationController {
-            sheet.detents = [.custom(resolver: { _ in 460 })]
-            sheet.prefersGrabberVisible = true
-        }
-        present(calendarVC, animated: true, completion: nil)
+    func didSelectDates(startDate: Date, endDate: Date) {
+        print("didSelectDates 호출됨")
+        updateDateLabel(with: startDate, endDate: endDate)
+        selectedStartDate = startDate
+        selectedEndDate = endDate
     }
     
+    func updateDateLabel(with startDate: Date, endDate: Date) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let startDateString = dateFormatter.string(from: startDate)
+        let endDateString = dateFormatter.string(from: endDate)
+        let dateRangeString = "\(startDateString) ~ \(endDateString)"
+        print("updateDateLabel 호출됨: \(dateRangeString)")
+        
+        self.dateLabel.text = dateRangeString
+    }
     
     func didSelectDate(_ date: Date) {
         self.selectedDate = date
@@ -356,20 +339,19 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         }
     }
     
-    private func showSummaryViewController(withAmount amount: Double) {
-        let summaryVC = SummaryViewController()
-        summaryVC.selectedCategory = selectedCategory
-        summaryVC.selectedDate = selectedDate
-        summaryVC.amount = amount
-        summaryVC.delegate = self
-        summaryVC.modalPresentationStyle = .formSheet
-        if let sheet = summaryVC.sheetPresentationController {
-            sheet.detents = [.custom(resolver: { _ in 460 })]
-            sheet.prefersGrabberVisible = true
+    func didSaveExpense(_ expense: Expense) {
+        if let index = expenses.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: expense.date) }) {
+            expenses[index].expenses.append(expense)
+        } else {
+            let newDailyExpense = DailyExpenses(date: expense.date, expenses: [expense])
+            expenses.append(newDailyExpense)
         }
-        present(summaryVC, animated: true, completion: nil)
+        
+        sortDailyExpensesByDate()
+        updateTotalSpendingAmount(with: expenses)
     }
-
+    
+    //MARK: - Setup Methods
     func setupUI() {
         view.addSubview(detailInputViewCollectionView)
         view.addSubview(detailInputViewButton.view)
@@ -401,7 +383,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
     func setupConstraints() {
         let screenHeight = UIScreen.main.bounds.height
         let collectionViewHeightMultiplier: CGFloat = screenHeight < 750 ? 0.35 : 0.4
-      
+        
         detailInputViewCollectionView.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(16)
             $0.leading.trailing.equalToSuperview()
@@ -462,27 +444,11 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         detailInputViewCollectionView.scrollToItem(at: IndexPath(item: index, section: 0), at: .centeredHorizontally, animated: true)
     }
     
-    @objc func dismissKeyboard(_ sender: UITapGestureRecognizer) {
-        let location = sender.location(in: self.view)
-        if !self.galleryInputCollectionView.frame.contains(location) && !self.mateCollectionView.frame.contains(location) {
-            view.endEditing(true)
-        }
-    }
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            updateColor()
-        }
-    }
-    
     func updateColor(){
-        //베이비그레이-커스텀블랙
         let babyGTocustomB = traitCollection.userInterfaceStyle == .dark ? UIColor(named: "customblack") : UIColor(named: "babygray")
         dateButton.configuration?.baseBackgroundColor = babyGTocustomB
         locationButton.backgroundColor = babyGTocustomB
         consumButton.backgroundColor = babyGTocustomB
-        
     }
     
     func setupCollectionView() {
@@ -503,22 +469,6 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         locationButton.addTarget(self, action: #selector(locationButtonTapped), for: .touchUpInside)
     }
     
-    @objc private func locationButtonTapped() {
-        presentMapViewController()
-    }
-    
-    private func presentMapViewController() {
-        let mapVC = MapViewController(region: MKCoordinateRegion(), startDate: Date(), endDate: Date(), onLocationSelected: { [weak self] (selectedLocation: CLLocationCoordinate2D, address: String) in
-            guard let self = self else { return }
-            self.updateLocationLabel(with: address)
-            self.savedLocation = selectedLocation
-            self.savedAddress = address
-        })
-        let backButton = ButtonFactory.createBackButton()
-        self.navigationItem.backBarButtonItem = backButton
-        navigationController?.pushViewController(mapVC, animated: true)
-    }
-    
     func setupNavigationBar() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(dismissDetailView))
         
@@ -526,23 +476,50 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         
         navigationItem.rightBarButtonItems = [doneButton]
         navigationController?.navigationBar.tintColor = .font
-
     }
     
-    func didSaveExpense(_ expense: Expense) {
-        if let index = expenses.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: expense.date) }) {
-            expenses[index].expenses.append(expense)
-        } else {
-            let newDailyExpense = DailyExpenses(date: expense.date, expenses: [expense])
-            expenses.append(newDailyExpense)
+    //MARK: - User Interaction Methods
+    @objc private func categoryTapped(_ sender: UIButton) {
+        let selectedCategoryTuple = categories[sender.tag]
+        selectedCategory = selectedCategoryTuple.1
+        selectedImageName = selectedCategoryTuple.0
+        showSingleDayCalendar()
+    }
+    
+    @objc private func showCalendar() {
+        let calendarVC = CalendarHostingController()
+        calendarVC.delegate = self
+        calendarVC.modalPresentationStyle = .pageSheet
+        if let sheet = calendarVC.sheetPresentationController {
+            sheet.detents = [.custom(resolver: { _ in 460 })]
+            sheet.prefersGrabberVisible = true
         }
-        
-        sortDailyExpensesByDate()
-        updateTotalSpendingAmount(with: expenses)
+        present(calendarVC, animated: true, completion: nil)
     }
     
-    func sortDailyExpensesByDate() {
-        expenses.sort { $0.date > $1.date }
+    @objc func dismissDetailView(_ sender:UIButton) {
+        dismiss(animated: true)
+    }
+    
+    @objc private func locationButtonTapped() {
+        presentMapViewController()
+    }
+    
+    @objc func doneButtonTapped() {
+        guard validateInputs() else { return }
+        
+        navigationItem.rightBarButtonItem?.isEnabled = false
+        showProgressView()
+        
+        Task {
+            do {
+                var pinLog = try await createOrUpdatePinLog()
+                let savedPinLog = try await savePinLog(pinLog: &pinLog)
+                finalizeSavePinLog(savedPinLog: savedPinLog)
+            } catch {
+                handleSaveError(error: error)
+            }
+        }
     }
     
     @objc private func showSingleDayCalendar() {
@@ -556,111 +533,136 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         present(calendarVC, animated: true, completion: nil)
     }
     
+    //MARK: - Helper Methods
     
-    @objc func dismissDetailView(_ sender:UIButton) {
-        dismiss(animated: true)
-    }
-    
-    func updateLocationLabel(with address: String) {
-        self.locationLeftLabel.text = address
-    }
-    
-    func configureView(with pinLog: PinLog) {
-        DispatchQueue.main.async {
-            self.configureSwitches(pinLog)
-            self.configureLocationAndDate(pinLog)
-            self.configureImages(pinLog)
-            self.configureFriends(pinLog)
-            self.configureTextInput(pinLog)
-            self.updateTotalSpendingAmount(with: pinLog.expenses ?? [])
-            self.switchToPage(0)
-        }
-    }
-
-    private func configureSwitches(_ pinLog: PinLog) {
-        self.spendingPublicSwitch.isOn = pinLog.isSpendingPublic
-        self.publicSwitch.isOn = pinLog.isPublic
-    }
-
-    private func configureLocationAndDate(_ pinLog: PinLog) {
-        self.locationLeftLabel.text = pinLog.location
-        self.updateDateLabel(with: pinLog.startDate, endDate: pinLog.endDate)
-    }
-
-    private func configureImages(_ pinLog: PinLog) {
-        self.selectedImages.removeAll()
-        self.imageLocations.removeAll()
-
-        let dispatchGroup = DispatchGroup()
-
-        for media in pinLog.media {
-            dispatchGroup.enter()
-            self.loadImage(from: media, dispatchGroup: dispatchGroup)
-        }
-
-        dispatchGroup.notify(queue: .main) {
-            self.updateRepresentativeImage()
-            self.reloadGalleryCell()
-        }
-    }
-
-    private func loadImage(from media: Media, dispatchGroup: DispatchGroup) {
-        guard let url = URL(string: media.url) else {
-            dispatchGroup.leave()
-            return
-        }
-
-        AF.request(url).responseData { [weak self] response in
-            defer { dispatchGroup.leave() }
+    private func presentMapViewController() {
+        let mapVC = MapViewController(region: MKCoordinateRegion(), startDate: Date(), endDate: Date(), onLocationSelected: { [weak self] (selectedLocation: CLLocationCoordinate2D, address: String) in
             guard let self = self else { return }
-
-            switch response.result {
-            case .success(let data):
-                if let image = UIImage(data: data) {
-                    let location = media.latitude != nil && media.longitude != nil ? CLLocationCoordinate2D(latitude: media.latitude!, longitude: media.longitude!) : nil
-                    let imageData = (image, media.isRepresentative, location)
-
-                    if media.isRepresentative {
-                        self.selectedImages.insert(imageData, at: 0)
-                    } else {
-                        self.selectedImages.append(imageData)
-                    }
-                }
-            case .failure(let error):
-                print("Error loading image: \(error.localizedDescription)")
-            }
-        }
+            self.updateLocationLabel(with: address)
+            self.savedLocation = selectedLocation
+            self.savedAddress = address
+        })
+        let backButton = ButtonFactory.createBackButton()
+        self.navigationItem.backBarButtonItem = backButton
+        navigationController?.pushViewController(mapVC, animated: true)
     }
-
-    private func configureFriends(_ pinLog: PinLog) {
-        if self.isInitialLoad {
-            self.loadSelectedFriends(pinLog: pinLog) {
-                self.mateCollectionView.reloadData()
-                self.isInitialLoad = false
-            }
+    
+    private func finalizeSavePinLog(savedPinLog: PinLog) {
+        self.savedPinLogId = savedPinLog.id
+        self.pinLog = savedPinLog
+        self.pinLog?.expenses = self.expenses
+        delegate?.didSavePinLog(savedPinLog)
+        hideProgressView()
+        navigationItem.rightBarButtonItem?.isEnabled = true
+        dismiss(animated: true, completion: nil)
+    }
+    
+    private func handleSaveError(error: Error) {
+        hideProgressView()
+        showAlert(title: "오류", message: "데이터 저장에 실패했습니다.")
+        navigationItem.rightBarButtonItem?.isEnabled = true
+    }
+    
+    private func validateInputs() -> Bool {
+        guard let locationTitle = locationLeftLabel.text, !locationTitle.isEmpty, locationTitle != "지역을 선택하세요" else {
+            showAlert(title: "지역 선택", message: "지역을 선택해주세요.")
+            return false
+        }
+        
+        guard let dateRange = dateLabel.text, dateRange != "날짜를 선택하세요" else {
+            showAlert(title: "날짜 선택", message: "유효한 날짜를 선택해주세요.")
+            return false
+        }
+        
+        guard !selectedImages.isEmpty else {
+            showAlert(title: "앨범 추가", message: "최소한 하나의 이미지를 선택해주세요.")
+            return false
+        }
+        return true
+    }
+    
+    private func parseDateRange(_ dateRange: String) -> (Date, Date)? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let dates = dateRange.split(separator: " ~ ")
+        guard dates.count == 2,
+              let startDate = dateFormatter.date(from: String(dates[0])),
+              let endDate = dateFormatter.date(from: String(dates[1])) else {
+            showAlert(title: "오류", message: "유효한 날짜를 선택해주세요.")
+            return nil
+        }
+        return (startDate, endDate)
+    }
+    
+    private func createOrUpdatePinLog() async throws -> PinLog {
+        guard let dateRange = dateLabel.text, let (startDate, endDate) = parseDateRange(dateRange) else {
+            throw NSError(domain: "DateError", code: -1, userInfo: [NSLocalizedDescriptionKey: "유효한 날짜를 선택해주세요."])
+        }
+        
+        var pinLog: PinLog
+        let title = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.titleTextField.text
+        let content = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.contentTextView.text
+        let isPublic = publicSwitch.isOn
+        let isSpendingPublic = spendingPublicSwitch.isOn
+        let address = savedAddress ?? "Unknown Address"
+        let latitude = savedLocation?.latitude ?? 0.0
+        let longitude = savedLocation?.longitude ?? 0.0
+        let totalSpendingAmount = calculateTotalSpendingAmount()
+        let maxSpendingAmount = calculateMaxSpendingAmount()
+        
+        if let existingPinLog = self.pinLog {
+            pinLog = existingPinLog
+            pinLog.location = locationLeftLabel.text!
+            pinLog.address = address
+            pinLog.latitude = latitude
+            pinLog.longitude = longitude
+            pinLog.startDate = startDate
+            pinLog.endDate = endDate
+            pinLog.title = title ?? ""
+            pinLog.content = content ?? ""
+            pinLog.isPublic = isPublic
+            pinLog.isSpendingPublic = isSpendingPublic
+            pinLog.attendeeIds = selectedFriends.map { $0.uid }
+            pinLog.totalSpendingAmount = totalSpendingAmount
+            pinLog.maxSpendingAmount = maxSpendingAmount
+            pinLog.expenses = self.expenses
         } else {
-            self.mateCollectionView.reloadData()
+            pinLog = PinLog(location: locationLeftLabel.text!,
+                            address: address,
+                            latitude: latitude,
+                            longitude: longitude,
+                            startDate: startDate,
+                            endDate: endDate,
+                            title: title ?? "",
+                            content: content ?? "",
+                            media: [],
+                            authorId: Auth.auth().currentUser?.uid ?? "",
+                            attendeeIds: selectedFriends.map { $0.uid },
+                            isPublic: isPublic,
+                            createdAt: Date(),
+                            pinCount: 0,
+                            pinnedBy: [],
+                            totalSpendingAmount: totalSpendingAmount,
+                            isSpendingPublic: isSpendingPublic,
+                            maxSpendingAmount: maxSpendingAmount,
+                            expenses: self.expenses)
         }
-    }
-
-    private func configureTextInput(_ pinLog: PinLog) {
-        if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
-            textInputCell.configure(with: pinLog)
-        } else {
-            self.detailInputViewCollectionView.scrollToItem(at: IndexPath(item: 1, section: 0), at: .centeredHorizontally, animated: false)
-            DispatchQueue.main.async {
-                if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
-                    textInputCell.configure(with: pinLog)
-                }
+        
+        if let representativeIndex = selectedImages.firstIndex(where: { $0.1 }) {
+            for i in 0..<selectedImages.count {
+                selectedImages[i].1 = (i == representativeIndex)
             }
+        } else if !selectedImages.isEmpty {
+            selectedImages[0].1 = true
         }
+        return pinLog
     }
-
-    private func reloadGalleryCell() {
-        if let galleryCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
-            galleryCell.selectedImages = self.selectedImages
-            galleryCell.photoInputCollectionView.reloadData()
-        }
+    
+    private func savePinLog(pinLog: inout PinLog) async throws -> PinLog {
+        let isRepresentativeFlags = selectedImages.map { $0.1 }
+        let imageLocations = selectedImages.compactMap { $0.2 }
+        return try await pinLogManager.createOrUpdatePinLog(pinLog: &pinLog, images: selectedImages.map { $0.0 }, imageLocations: imageLocations, isRepresentativeFlags: isRepresentativeFlags)
     }
     
     func loadSavedLocation() {
@@ -757,139 +759,198 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         }
     }
     
-    @objc func doneButtonTapped() {
-        guard validateInputs() else { return }
+    func configureView(with pinLog: PinLog) {
+        DispatchQueue.main.async {
+            self.configureSwitches(pinLog)
+            self.configureLocationAndDate(pinLog)
+            self.configureImages(pinLog)
+            self.configureFriends(pinLog)
+            self.configureTextInput(pinLog)
+            self.updateTotalSpendingAmount(with: pinLog.expenses ?? [])
+            self.switchToPage(0)
+        }
+    }
+    
+    private func configureSwitches(_ pinLog: PinLog) {
+        self.spendingPublicSwitch.isOn = pinLog.isSpendingPublic
+        self.publicSwitch.isOn = pinLog.isPublic
+    }
+    
+    private func configureLocationAndDate(_ pinLog: PinLog) {
+        self.locationLeftLabel.text = pinLog.location
+        self.updateDateLabel(with: pinLog.startDate, endDate: pinLog.endDate)
+    }
+    
+    private func configureImages(_ pinLog: PinLog) {
+        self.selectedImages.removeAll()
+        self.imageLocations.removeAll()
         
-        navigationItem.rightBarButtonItem?.isEnabled = false
-        showProgressView()
-
-        Task {
-            do {
-                var pinLog = try await createOrUpdatePinLog()
-                let savedPinLog = try await savePinLog(pinLog: &pinLog)
-                finalizeSavePinLog(savedPinLog: savedPinLog)
-            } catch {
-                handleSaveError(error: error)
+        let dispatchGroup = DispatchGroup()
+        
+        for media in pinLog.media {
+            dispatchGroup.enter()
+            self.loadImage(from: media, dispatchGroup: dispatchGroup)
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            self.updateRepresentativeImage()
+            self.reloadGalleryCell()
+        }
+    }
+    
+    private func loadImage(from media: Media, dispatchGroup: DispatchGroup) {
+        guard let url = URL(string: media.url) else {
+            dispatchGroup.leave()
+            return
+        }
+        
+        AF.request(url).responseData { [weak self] response in
+            defer { dispatchGroup.leave() }
+            guard let self = self else { return }
+            
+            switch response.result {
+            case .success(let data):
+                if let image = UIImage(data: data) {
+                    let location = media.latitude != nil && media.longitude != nil ? CLLocationCoordinate2D(latitude: media.latitude!, longitude: media.longitude!) : nil
+                    let imageData = (image, media.isRepresentative, location)
+                    
+                    if media.isRepresentative {
+                        self.selectedImages.insert(imageData, at: 0)
+                    } else {
+                        self.selectedImages.append(imageData)
+                    }
+                }
+            case .failure(let error):
+                print("Error loading image: \(error.localizedDescription)")
             }
         }
     }
-
-    private func finalizeSavePinLog(savedPinLog: PinLog) {
-        self.savedPinLogId = savedPinLog.id
-        self.pinLog = savedPinLog
-        self.pinLog?.expenses = self.expenses
-        delegate?.didSavePinLog(savedPinLog)
-        hideProgressView()
-        navigationItem.rightBarButtonItem?.isEnabled = true
-        dismiss(animated: true, completion: nil)
-    }
-
-    private func handleSaveError(error: Error) {
-        hideProgressView()
-        showAlert(title: "오류", message: "데이터 저장에 실패했습니다.")
-        navigationItem.rightBarButtonItem?.isEnabled = true
-    }
     
-    private func validateInputs() -> Bool {
-        guard let locationTitle = locationLeftLabel.text, !locationTitle.isEmpty, locationTitle != "지역을 선택하세요" else {
-            showAlert(title: "지역 선택", message: "지역을 선택해주세요.")
-            return false
-        }
-
-        guard let dateRange = dateLabel.text, dateRange != "날짜를 선택하세요" else {
-            showAlert(title: "날짜 선택", message: "유효한 날짜를 선택해주세요.")
-            return false
-        }
-
-        guard !selectedImages.isEmpty else {
-            showAlert(title: "앨범 추가", message: "최소한 하나의 이미지를 선택해주세요.")
-            return false
-        }
-        return true
-    }
-    
-    private func parseDateRange(_ dateRange: String) -> (Date, Date)? {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-
-        let dates = dateRange.split(separator: " ~ ")
-        guard dates.count == 2,
-              let startDate = dateFormatter.date(from: String(dates[0])),
-              let endDate = dateFormatter.date(from: String(dates[1])) else {
-            showAlert(title: "오류", message: "유효한 날짜를 선택해주세요.")
-            return nil
-        }
-        return (startDate, endDate)
-    }
-    
-    private func createOrUpdatePinLog() async throws -> PinLog {
-        guard let dateRange = dateLabel.text, let (startDate, endDate) = parseDateRange(dateRange) else {
-            throw NSError(domain: "DateError", code: -1, userInfo: [NSLocalizedDescriptionKey: "유효한 날짜를 선택해주세요."])
-        }
-
-        var pinLog: PinLog
-        let title = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.titleTextField.text
-        let content = (detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell)?.contentTextView.text
-        let isPublic = publicSwitch.isOn
-        let isSpendingPublic = spendingPublicSwitch.isOn
-        let address = savedAddress ?? "Unknown Address"
-        let latitude = savedLocation?.latitude ?? 0.0
-        let longitude = savedLocation?.longitude ?? 0.0
-        let totalSpendingAmount = calculateTotalSpendingAmount()
-        let maxSpendingAmount = calculateMaxSpendingAmount()
-
-        if let existingPinLog = self.pinLog {
-            pinLog = existingPinLog
-            pinLog.location = locationLeftLabel.text!
-            pinLog.address = address
-            pinLog.latitude = latitude
-            pinLog.longitude = longitude
-            pinLog.startDate = startDate
-            pinLog.endDate = endDate
-            pinLog.title = title ?? ""
-            pinLog.content = content ?? ""
-            pinLog.isPublic = isPublic
-            pinLog.isSpendingPublic = isSpendingPublic
-            pinLog.attendeeIds = selectedFriends.map { $0.uid }
-            pinLog.totalSpendingAmount = totalSpendingAmount
-            pinLog.maxSpendingAmount = maxSpendingAmount
-            pinLog.expenses = self.expenses
+    private func configureFriends(_ pinLog: PinLog) {
+        if self.isInitialLoad {
+            self.loadSelectedFriends(pinLog: pinLog) {
+                self.mateCollectionView.reloadData()
+                self.isInitialLoad = false
+            }
         } else {
-            pinLog = PinLog(location: locationLeftLabel.text!,
-                            address: address,
-                            latitude: latitude,
-                            longitude: longitude,
-                            startDate: startDate,
-                            endDate: endDate,
-                            title: title ?? "",
-                            content: content ?? "",
-                            media: [],
-                            authorId: Auth.auth().currentUser?.uid ?? "",
-                            attendeeIds: selectedFriends.map { $0.uid },
-                            isPublic: isPublic,
-                            createdAt: Date(),
-                            pinCount: 0,
-                            pinnedBy: [],
-                            totalSpendingAmount: totalSpendingAmount,
-                            isSpendingPublic: isSpendingPublic,
-                            maxSpendingAmount: maxSpendingAmount,
-                            expenses: self.expenses)
+            self.mateCollectionView.reloadData()
         }
-
-        if let representativeIndex = selectedImages.firstIndex(where: { $0.1 }) {
-            for i in 0..<selectedImages.count {
-                selectedImages[i].1 = (i == representativeIndex)
-            }
-        } else if !selectedImages.isEmpty {
-            selectedImages[0].1 = true
-        }
-        return pinLog
     }
     
-    private func savePinLog(pinLog: inout PinLog) async throws -> PinLog {
-        let isRepresentativeFlags = selectedImages.map { $0.1 }
-        let imageLocations = selectedImages.compactMap { $0.2 }
-        return try await pinLogManager.createOrUpdatePinLog(pinLog: &pinLog, images: selectedImages.map { $0.0 }, imageLocations: imageLocations, isRepresentativeFlags: isRepresentativeFlags)
+    private func configureTextInput(_ pinLog: PinLog) {
+        if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
+            textInputCell.configure(with: pinLog)
+        } else {
+            self.detailInputViewCollectionView.scrollToItem(at: IndexPath(item: 1, section: 0), at: .centeredHorizontally, animated: false)
+            DispatchQueue.main.async {
+                if let textInputCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 1, section: 0)) as? TextInputCollectionViewCell {
+                    textInputCell.configure(with: pinLog)
+                }
+            }
+        }
+    }
+    
+    private func reloadGalleryCell() {
+        if let galleryCell = self.detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
+            galleryCell.selectedImages = self.selectedImages
+            galleryCell.photoInputCollectionView.reloadData()
+        }
+    }
+    
+    func loadSelectedFriends(pinLog: PinLog, completion: @escaping () -> Void) {
+        let group = DispatchGroup()
+        selectedFriends.removeAll()
+        
+        // 기존 핀로그에 저장된 attendeeIds 가져오기
+        for userId in pinLog.attendeeIds {
+            group.enter()
+            fetchUserSummary(userId: userId) { [weak self] userSummary in
+                guard let self = self else {
+                    group.leave()
+                    return
+                }
+                if var userSummary = userSummary {
+                    userSummary.isMate = true
+                    self.selectedFriends.append(userSummary)
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) {
+            print("로드된 메이트 목록: \(self.selectedFriends)")
+            completion()
+        }
+    }
+    
+    func fetchUserSummary(userId: String, completion: @escaping (UserSummary?) -> Void) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { document, error in
+            if let document = document, document.exists, let data = document.data() {
+                let userSummary = UserSummary(
+                    uid: userId,
+                    email: data["email"] as? String ?? "",
+                    displayName: data["displayName"] as? String ?? "",
+                    photoURL: data["photoURL"] as? String,
+                    isMate: false
+                )
+                completion(userSummary)
+            } else {
+                completion(nil)
+            }
+        }
+    }
+    
+    private func fetchAddress(for location: CLLocationCoordinate2D, completion: @escaping (String) -> Void) {
+        let geocoder = CLGeocoder()
+        let clLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        geocoder.reverseGeocodeLocation(clLocation) { placemarks, error in
+            if let error = error {
+                print("Error fetching address: \(error.localizedDescription)")
+                completion("No Address")
+                return
+            }
+            if let placemark = placemarks?.first {
+                let address = [
+                    placemark.thoroughfare,
+                    placemark.locality,
+                    placemark.administrativeArea,
+                    placemark.country
+                ].compactMap { $0 }.joined(separator: ", ")
+                completion(address)
+            } else {
+                completion("No Address")
+            }
+        }
+    }
+    
+    func updateRepresentativeImage() {
+        if let index = representativeImageIndex, index < selectedImages.count {
+            for i in 0..<selectedImages.count {
+                selectedImages[i].1 = (i == index)
+            }
+        } else {
+            representativeImageIndex = selectedImages.isEmpty ? nil : 0
+            if let index = representativeImageIndex {
+                selectedImages[index].1 = true
+            }
+        }
+        
+        if let galleryCell = detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
+            galleryCell.selectedImages = selectedImages
+            galleryCell.photoInputCollectionView.reloadData()
+        }
+    }
+    
+    func updateTotalSpendingAmount(with dailyExpenses: [DailyExpenses]) {
+        let totalAmount = dailyExpenses.flatMap { $0.expenses }.reduce(0) { $0 + $1.expenseAmount }
+        consumLeftLabel.text = "\(formatCurrency(totalAmount))원"
+    }
+    
+    func formatCurrency(_ amount: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: amount)) ?? "0"
     }
     
     private func showButtonFeedBackView() {
@@ -923,57 +984,7 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         return expenses.flatMap { $0.expenses }.map { $0.expenseAmount }.max() ?? 0
     }
     
-    func loadSelectedFriends(pinLog: PinLog, completion: @escaping () -> Void) {
-        let group = DispatchGroup()
-        selectedFriends.removeAll()
-
-        // 기존 핀로그에 저장된 attendeeIds 가져오기
-        for userId in pinLog.attendeeIds {
-            group.enter()
-            fetchUserSummary(userId: userId) { [weak self] userSummary in
-                guard let self = self else {
-                    group.leave()
-                    return
-                }
-                if var userSummary = userSummary {
-                    userSummary.isMate = true
-                    self.selectedFriends.append(userSummary)
-                }
-                group.leave()
-            }
-        }
-
-        group.notify(queue: .main) {
-            print("로드된 메이트 목록: \(self.selectedFriends)")
-            completion()
-        }
-    }
-
-    func fetchUserSummary(userId: String, completion: @escaping (UserSummary?) -> Void) {
-        let db = Firestore.firestore()
-        db.collection("users").document(userId).getDocument { document, error in
-            if let document = document, document.exists, let data = document.data() {
-                let userSummary = UserSummary(
-                    uid: userId,
-                    email: data["email"] as? String ?? "",
-                    displayName: data["displayName"] as? String ?? "",
-                    photoURL: data["photoURL"] as? String,
-                    isMate: false
-                )
-                completion(userSummary)
-            } else {
-                completion(nil)
-            }
-        }
-    }
-    
-    func createCollectionViewFlowLayout(for collectionView: UICollectionView) -> UICollectionViewFlowLayout {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.minimumInteritemSpacing = 5
-        layout.itemSize = CGSize(width: 85, height: 85)
-        return layout
-    }
+    //MARK: - PHPickerViewControllerDelegate Methods
     
     func requestPhotoLibraryAccess() {
         PHPhotoLibrary.requestAuthorization { status in
@@ -1032,59 +1043,54 @@ class DetailInputViewController: UIViewController, CalendarHostingControllerDele
         present(alertController, animated: true, completion: nil)
     }
     
-    private func fetchAddress(for location: CLLocationCoordinate2D, completion: @escaping (String) -> Void) {
-        let geocoder = CLGeocoder()
-        let clLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
-        geocoder.reverseGeocodeLocation(clLocation) { placemarks, error in
-            if let error = error {
-                print("Error fetching address: \(error.localizedDescription)")
-                completion("No Address")
-                return
-            }
-            if let placemark = placemarks?.first {
-                let address = [
-                    placemark.thoroughfare,
-                    placemark.locality,
-                    placemark.administrativeArea,
-                    placemark.country
-                ].compactMap { $0 }.joined(separator: ", ")
-                completion(address)
-            } else {
-                completion("No Address")
-            }
+    @objc func dismissKeyboard(_ sender: UITapGestureRecognizer) {
+        let location = sender.location(in: self.view)
+        if !self.galleryInputCollectionView.frame.contains(location) && !self.mateCollectionView.frame.contains(location) {
+            view.endEditing(true)
         }
     }
     
-    func updateRepresentativeImage() {
-        if let index = representativeImageIndex, index < selectedImages.count {
-            for i in 0..<selectedImages.count {
-                selectedImages[i].1 = (i == index)
-            }
-        } else {
-            representativeImageIndex = selectedImages.isEmpty ? nil : 0
-            if let index = representativeImageIndex {
-                selectedImages[index].1 = true
-            }
-        }
-        
-        if let galleryCell = detailInputViewCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? GallaryInputCollectionViewCell {
-            galleryCell.selectedImages = selectedImages
-            galleryCell.photoInputCollectionView.reloadData()
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateColor()
         }
     }
     
-    func updateTotalSpendingAmount(with dailyExpenses: [DailyExpenses]) {
-        let totalAmount = dailyExpenses.flatMap { $0.expenses }.reduce(0) { $0 + $1.expenseAmount }
-        consumLeftLabel.text = "\(formatCurrency(totalAmount))원"
+    private func showSummaryViewController(withAmount amount: Double) {
+        let summaryVC = SummaryViewController()
+        summaryVC.selectedCategory = selectedCategory
+        summaryVC.selectedDate = selectedDate
+        summaryVC.amount = amount
+        summaryVC.delegate = self
+        summaryVC.modalPresentationStyle = .formSheet
+        if let sheet = summaryVC.sheetPresentationController {
+            sheet.detents = [.custom(resolver: { _ in 460 })]
+            sheet.prefersGrabberVisible = true
+        }
+        present(summaryVC, animated: true, completion: nil)
     }
     
-    func formatCurrency(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: amount)) ?? "0"
+    
+    
+    func sortDailyExpensesByDate() {
+        expenses.sort { $0.date > $1.date }
+    }
+    
+    func updateLocationLabel(with address: String) {
+        self.locationLeftLabel.text = address
+    }
+    
+    func createCollectionViewFlowLayout(for collectionView: UICollectionView) -> UICollectionViewFlowLayout {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 5
+        layout.itemSize = CGSize(width: 85, height: 85)
+        return layout
     }
 }
 
+//MARK: - UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout Methods
 
 extension DetailInputViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -1164,12 +1170,16 @@ extension DetailInputViewController: UICollectionViewDelegate, UICollectionViewD
     }
 }
 
+//MARK: - MateViewControllerDelegate Methods
+
 extension DetailInputViewController: MateViewControllerDelegate {
     func didSelectMates(_ mates: [UserSummary]) {
         selectedFriends = mates
         mateCollectionView.reloadData()
     }
 }
+
+//MARK: - PHPickerViewControllerDelegate Methods
 
 extension DetailInputViewController: PHPickerViewControllerDelegate {
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
@@ -1237,6 +1247,8 @@ extension DetailInputViewController: PHPickerViewControllerDelegate {
     }
 }
 
+//MARK: - GallaryInputCollectionViewCellDelegate Methods
+
 extension DetailInputViewController: GallaryInputCollectionViewCellDelegate {
     func didSelectAddPhoto() {
         showPHPicker()
@@ -1260,6 +1272,8 @@ extension DetailInputViewController: GallaryInputCollectionViewCellDelegate {
         }
     }
 }
+
+//MARK: - UITextViewDelegate Methods
 
 extension DetailInputViewController: UITextViewDelegate {
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -1289,6 +1303,8 @@ extension DetailInputViewController: UITextViewDelegate {
         }
     }
 }
+
+//MARK: - TextInputCollectionViewCellDelegate Methods
 
 extension DetailInputViewController: TextInputCollectionViewCellDelegate {
     func keyboardWillShow() {
